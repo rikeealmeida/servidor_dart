@@ -3,21 +3,20 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
-import 'package:orm/orm.dart';
+import 'package:flutter/widgets.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
-import 'package:teste_servidor/generated/prisma_client/prisma.dart';
 
-import 'generated/prisma_client/client.dart';
+import 'package:shelf_router/shelf_router.dart' as router;
+import 'package:teste_servidor/database.dart';
 
 class RestServer extends ChangeNotifier {
-  PrismaClient? prismaClient;
   HttpServer? _serverInstance;
   Timer? sincTimer;
+  AppDatabase? db;
 
   RestServer() {
-    prismaClient = PrismaClient();
+    db = AppDatabase();
   }
 
   final sincronizando = ValueNotifier(false);
@@ -26,47 +25,60 @@ class RestServer extends ChangeNotifier {
       ValueNotifier(_serverInstance != null);
 
 // Função para lidar com requisições REST
-  Future<Response> _handler(Request request) async {
-    if (request.url.path == 'users') {
-      final users = await prismaClient!.municipios.findMany();
-      return Response.ok(jsonEncode({"resultado": users.toList()}));
-    }
-    return Response.notFound('Not found');
-  }
 
 // Função que inicia o servidor local
   Future<void> startServer() async {
-    final users = await prismaClient!.municipios.findMany();
-    // if (users.isEmpty) {
-    //   final users = [
-    //     UserCreateManyInput(
-    //         email: "henrique.almeida.ads@gmail.com",
-    //         name: PrismaUnion.$1("Henrique Almeida")),
-    //     UserCreateManyInput(
-    //         email: "riqwow123@gmail.com",
-    //         name: PrismaUnion.$1("Henrique Santos")),
-    //   ];
-
-    //   await prismaClient!.user.createMany(data: PrismaUnion.$2(users));
-    // }
-
-    sincTimer = Timer.periodic(Duration(seconds: 15), (t) async {
+    sincTimer = Timer.periodic(const Duration(seconds: 15), (t) async {
       if (sincronizando.value || !servidorRodando.value) return;
       sincronizando.value = true;
-      await Future.delayed(Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 3));
       sincronizando.value = false;
       ultimoSinc.value = DateTime.now();
     });
 
     if (_serverInstance == null) {
-      var host = InternetAddress.anyIPv4;
-      final handler =
-          const Pipeline().addMiddleware(logRequests()).addHandler(_handler);
-      _serverInstance = await io.serve(handler, host, 8000);
-      print('Servidor rodando em http://localhost:8000');
+      startApi();
     } else {
       print("Servidor já está em execução!");
     }
+  }
+
+  Future<void> startApi() async {
+    Response rootHandler(Request req) => Response.ok('Hello, World!\n');
+    Response echoHandler(Request req) =>
+        Response.ok('${req.params['message']}\n');
+    Future<Response> getMunicipios(Request req) async {
+      final items = await db!.select(db!.todoItems).get();
+      return Response.ok(jsonEncode({"resultado": items.toList()}));
+    }
+
+    // Future<Response> getMunicipiosByUF(Request req) async {
+    //   var uf = req.params['uf'];
+    //   if (uf != null) {
+    //     final municipios = await prismaClient!.municipios.findMany(
+    //       where: MunicipiosWhereInput(
+    //         uf: PrismaUnion.$1(
+    //           StringNullableFilter(equals: PrismaUnion.$1(uf)),
+    //         ),
+    //       ),
+    //     );
+    //     return Response.ok(jsonEncode(municipios.toList()));
+    //   } else {
+    //     return Response.badRequest(body: "UF não inserida!");
+    //   }
+    // }
+
+    final app = router.Router()
+      ..get('/', rootHandler)
+      ..get('/echo/<message>', echoHandler)
+      ..get('/municipios', getMunicipios);
+    // ..get('/municipios/<uf>', getMunicipiosByUF);
+
+    var host = InternetAddress.anyIPv4;
+    final handler =
+        const Pipeline().addMiddleware(logRequests()).addHandler(app.call);
+    _serverInstance = await io.serve(handler, host, 8000);
+    print('Servidor rodando em http://localhost:8000');
   }
 
 // Função para parar o servidor
