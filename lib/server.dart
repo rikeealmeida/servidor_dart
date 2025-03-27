@@ -13,14 +13,12 @@ import 'package:teste_servidor/database.dart';
 class RestServer extends ChangeNotifier {
   HttpServer? _serverInstance;
   Timer? sincTimer;
-  AppDatabase? db;
+  // AppDatabase? db;
 
   RestServer() {
-    db = AppDatabase();
+    // db = AppDatabase();
   }
 
-  final sincronizando = ValueNotifier(false);
-  final ultimoSinc = ValueNotifier(DateTime(2000, 01, 01));
   ValueNotifier<bool> get servidorRodando =>
       ValueNotifier(_serverInstance != null);
 
@@ -28,13 +26,7 @@ class RestServer extends ChangeNotifier {
 
 // Função que inicia o servidor local
   Future<void> startServer() async {
-    sincTimer = Timer.periodic(const Duration(seconds: 15), (t) async {
-      if (sincronizando.value || !servidorRodando.value) return;
-      sincronizando.value = true;
-      await Future.delayed(const Duration(seconds: 3));
-      sincronizando.value = false;
-      ultimoSinc.value = DateTime.now();
-    });
+    sincTimer = Timer.periodic(const Duration(seconds: 15), (t) async {});
 
     if (_serverInstance == null) {
       startApi();
@@ -47,10 +39,10 @@ class RestServer extends ChangeNotifier {
     Response rootHandler(Request req) => Response.ok('Hello, World!\n');
     Response echoHandler(Request req) =>
         Response.ok('${req.params['message']}\n');
-    Future<Response> getMunicipios(Request req) async {
-      final items = await db!.select(db!.todoItems).get();
-      return Response.ok(jsonEncode({"resultado": items.toList()}));
-    }
+    // Future<Response> getMunicipios(Request req) async {
+    //   final items = await db!.select(db!.todoItems).get();
+    //   return Response.ok(jsonEncode({"resultado": items.toList()}));
+    // }
 
     // Future<Response> getMunicipiosByUF(Request req) async {
     //   var uf = req.params['uf'];
@@ -68,10 +60,9 @@ class RestServer extends ChangeNotifier {
     //   }
     // }
 
-    final app = router.Router()
-      ..get('/', rootHandler)
-      ..get('/echo/<message>', echoHandler)
-      ..get('/municipios', getMunicipios);
+    final app = router.Router()..get('/', rootHandler);
+    // ..get('/echo/<message>', echoHandler)
+    // ..get('/municipios', getMunicipios);
     // ..get('/municipios/<uf>', getMunicipiosByUF);
 
     var host = InternetAddress.anyIPv4;

@@ -105,60 +105,7 @@ class _ServerScreenState extends State<ServerScreen> {
                     );
                   }),
             ),
-            Container(
-              color: Colors.blue.withOpacity(.5),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "Versão: 1.0.0",
-                      style:
-                          TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                    ListenableBuilder(
-                        listenable: restServer.sincronizando,
-                        builder: (context, child) {
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              if (restServer.sincronizando.value) ...[
-                                SizedBox(
-                                  width: 15,
-                                  height: 15,
-                                  child: Padding(
-                                    padding: EdgeInsets.all(2),
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 5),
-                                Text("Sincronizando",
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold)),
-                              ] else ...[
-                                ListenableBuilder(
-                                  listenable: restServer.ultimoSinc,
-                                  builder: (context, child) {
-                                    return Text(
-                                        "Último Sincronismo: ${restServer.ultimoSinc.value}",
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold));
-                                  },
-                                ),
-                              ],
-                            ],
-                          );
-                        })
-                  ],
-                ),
-              ),
-            )
-          ],
+           ],
         ),
       ),
     );
